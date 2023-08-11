@@ -1,0 +1,636 @@
+---
+title: "Case Study"
+author: "Anishka Peter"
+date: "2023-08-01"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Introduction 
+
+Hello, my name is Anishka Peter. I am looking into a dataset from Frito Lay which includes various variables such as Attrition, Age, Business Travel, and Monthly Salary. Using this data set I will build a model to predict attrition for employee based on various factors. Then I will predict emplopyees monthly income using a linear regression.Finally, I will provide additonal insights on various trends related to employees job role. 
+
+# RShiny App
+https://anishkapeter.shinyapps.io/FritoLayAnalysis/
+
+# Attrition Prediction 
+
+## Variable Selection 
+
+After looking at many of the variables in bar plots comparing the attrition for each level of the variable, I found that age, overtime, and monthly salary were very influential on attrition. 
+
+```{r}
+library(ggplot2)
+library(aws.s3)
+library(dplyr)
+library(GGally)
+Sys.setenv("AWS_ACCESS_KEY_ID" = "AKIATF2CM7SX6RUXSVBZ",
+           "AWS_SECRET_ACCESS_KEY_ID" = "RQYCFGkfN9gTnIp7pfvz0Id0VXLfoHWLK+HTkwuY",
+           "AWS_DEFAULT_REGION" = "us-east-2")
+
+
+get_bucket("ddsproject1")
+data = s3read_using(FUN = read.csv,
+                          bucket = "ddsproject1",
+                          object = "CaseStudy2-data.csv")
+
+## Make Categorical Variables into factors
+data$Attrition = as.factor(data$Attrition)
+data$Over18 = as.factor(data$Over18)
+data$OverTime = as.factor(ifelse(data$OverTime == 'Yes',1,0))
+data$BusinessTravel = as.factor(data$BusinessTravel)
+data$Department = as.factor(data$Department)
+data$EducationField = as.factor(data$EducationField)
+data$Education = as.factor(data$Education)
+data$EnvironmentSatisfaction = as.factor(data$EnvironmentSatisfaction)
+data$Gender = as.factor(data$Gender)
+data$JobInvolvement = as.factor(data$JobInvolvement)
+data$JobLevel = as.factor(data$JobLevel)
+data$JobRole = as.factor(data$JobRole)
+data$JobSatisfaction = as.factor(data$JobSatisfaction)
+data$MaritalStatus = as.factor(data$MaritalStatus)
+data$NumCompaniesWorked = as.factor(data$NumCompaniesWorked)
+data$PerformanceRating = as.factor(data$PerformanceRating)
+data$RelationshipSatisfaction = as.factor(data$RelationshipSatisfaction)
+data$StandardHours = as.factor(data$StandardHours)
+data$StockOptionLevel = as.factor(data$StockOptionLevel)
+data$WorkLifeBalance = as.factor(data$WorkLifeBalance)
+
+# Seeing What Variables Affect Attrition 
+#ggplot(data = data, aes(fill = Attrition, x = BusinessTravel)) + geom_bar(position = "dodge")
+#ggplot(data = data, aes(fill = Attrition, x = Department)) + geom_bar(position = "dodge")
+#ggplot(data = data, aes(fill = Attrition, x = DistanceFromHome)) + geom_bar()
+#ggplot(data = data, aes(fill = Attrition, x = EducationField)) + geom_bar(position = "dodge")
+#ggplot(data = data, aes(fill = Attrition, x = EnvironmentSatisfaction)) + geom_bar(position = "dodge")
+#ggplot(data = data, aes(fill = Attrition, x = JobInvolvement)) + geom_bar(position = "dodge")
+#ggplot(data = data, aes(fill = Attrition, x = HourlyRate)) + geom_histogram(position = "dodge")
+#ggplot(data = data, aes(fill = Attrition, x = MonthlyRate)) + geom_histogram(position = "dodge")
+#ggplot(data = data, aes(fill = Attrition, y = MonthlyIncome, x = MonthlyRate)) + geom_point()
+#ggplot(data = data, aes(fill = Attrition, x = PercentSalaryHike)) + geom_bar(position = "dodge")
+# Could be By working Years 
+#ggplot(data = data, aes(fill = Attrition, x = TotalWorkingYears)) + geom_bar(position = "dodge")
+#ggplot(data = data, aes(fill = Attrition, x = WorkLifeBalance)) + geom_bar(position = "dodge")
+#ggplot(data = data, aes(fill = Attrition, x = YearsAtCompany)) + geom_bar(position = "dodge")
+#ggplot(data = data, aes(fill = Attrition, x = YearsInCurrentRole)) + geom_bar(position = "dodge")
+#ggplot(data = data, aes(fill = Attrition, x = YearsSinceLastPromotion)) + geom_bar(position = "dodge")
+
+
+# Seems like it is influential on Attrition 
+#ggplot(data = data, aes(fill = Attrition, x = JobSatisfaction)) + geom_bar(position = "dodge")
+
+
+# The total Overtime of Yes is lower than No but Attrition is Higher 
+colors = c("#FF6961","#FDFD96")
+ggplot(data, aes(fill=Attrition, y = OverTime)) + 
+  geom_bar(position = "fill") + 
+  scale_x_continuous(labels = scales::percent) + 
+  ggtitle("Percentage of Attrition by Over Time") + 
+  xlab("Percentage") +
+  ylab("Over Time")+
+  scale_fill_manual(values = colors) +
+   theme(plot.background = element_rect("#f5f3ed"), 
+        legend.background = element_blank())
+
+
+colors = c("#FDFD96","#FF6961")
+# Monthly Income Seems influential on Attrition 
+ggplot(data = data, aes(fill = Attrition, x = MonthlyIncome)) + 
+  geom_density() + 
+  facet_wrap(~Attrition) +
+  ggtitle("Attrition by Monthly Income") +
+  xlab("Monthly Income") + 
+  ylab("Density") +
+  scale_fill_manual(values = colors) + 
+  theme(plot.background = element_rect("#f5f3ed"), legend.position = "none")
+
+
+# Make age into categorical 
+data$Age_Bin <- cut(data$Age, breaks=c(18, 22, 26, 30, 34, 38, 42, 46, 50, 54, 61), right = FALSE)
+
+colors = c("#FF6961","#FDFD96")
+ggplot(data, aes(fill=Attrition, y = Age_Bin)) + 
+  geom_bar(position = "fill") + 
+  scale_x_continuous(labels = scales::percent) + 
+  ggtitle("Percentage of Attrition by Age Group") + 
+  xlab("Percentage") +
+  ylab("Age Group")+
+  scale_fill_manual(values = colors) +
+   theme(plot.background = element_rect("#f5f3ed"), 
+        legend.background = element_blank())
+```
+
+
+## KNN Model 
+
+```{r}
+library(class)
+library(caret)
+library(e1071)
+library(dplyr)
+library(tidyverse)
+
+## Checking to see if we can find specificity and sensitivity >60% without doing anything to the data
+data$OverTime = as.numeric(data$OverTime)
+data$Age_Bin = as.numeric(data$Age_Bin)
+trainingindex = sample(1:dim(data)[1],round(.7*dim(data)[1]))
+train = data[trainingindex,]
+test = data[-trainingindex,]
+a = knn(train[,c(20, 24,37)],test[,c(20, 24,37)],train[,3],prob=FALSE, k = 2)
+confusionMatrix(a,as.factor(test$Attrition))
+
+index = sample(1:dim(data)[1],0.7*dim(data[1]))
+itrain = data[index,]
+itest = data[-index,]
+
+accs = data.frame(accuracy = numeric(90), sensitivity = numeric(90), specificity = numeric(90), k = numeric(90))
+
+for(i in 1:90){
+  classifications = knn(itrain[,c(20, 24,37)],itest[,c(20, 24,37)],itrain$Attrition, prob = TRUE, k = i)
+  table(itest$Attrition,classifications)
+  CM = confusionMatrix(table(itest$Attrition,classifications))
+  accs$accuracy[i] = CM$overall[1]
+  accs$k[i] = i
+  accs$sensitivity[i] = CM$byClass[1]
+  accs$specificity[i] = CM$byClass[2]
+
+}
+
+plot(accs$k,accs$accuracy, type = "l", xlab = "k")
+plot(accs$k,accs$sensitivity, type = "l", xlab = "k")
+plot(accs$k,accs$specificity, type = "l", xlab = "k")
+
+# Can not get a specificity or sensitivity score > 60% on this data
+```
+
+
+```{r}
+## Oversampling 
+summary(data$Attrition)
+
+OnlyY = data %>% filter(Attrition == "Yes")
+OnlyYOver = rbind(OnlyY,OnlyY[sample(seq(1,140,1),(730-140),replace = TRUE),])
+dim(OnlyYOver)
+
+OverSamp = rbind(data %>% filter(Attrition == "No"), OnlyYOver)
+dim(OverSamp)
+
+trainIndices = sample(1:dim(OverSamp)[1], 0.7 * dim(OverSamp)[1])
+train = OverSamp[trainIndices,]
+test = OverSamp[-trainIndices,]
+
+
+# Finding K with highest Accuracy, sensitivity and specificity
+accs = data.frame(accuracy = numeric(90), sensitivity = numeric(90), specificity = numeric(90), k = numeric(90))
+for(i in 1:90){
+  classifications = knn(train[,c(20, 24,37)],test[,c(20, 24,37)],train$Attrition,
+                        prob = TRUE, k = i)
+  table(test$Attrition,classifications)
+  CM = confusionMatrix(table(test$Attrition,classifications))
+  accs$accuracy[i] = CM$overall[1]
+  accs$k[i] = i
+  accs$sensitivity[i] = CM$byClass[1]
+  accs$specificity[i] = CM$byClass[2]
+
+}
+
+plot(accs$k,accs$accuracy, type = "l", xlab = "k")
+plot(accs$k,accs$sensitivity, type = "l", xlab = "k")
+plot(accs$k,accs$specificity, type = "l", xlab = "k")
+
+# Seems like 2 has the highest accuracy, specificity, and sensitivity 
+classifications = knn(train[,c(20, 24,37)],test[,c(20, 24,37)],train[,3], prob = TRUE, k = 2)
+
+
+CM = confusionMatrix(table(classifications,test[,3]))
+CM
+
+```
+
+```{r}
+num_seeds <- 100
+accuracies <- numeric(num_seeds)
+sensitivies <- numeric(num_seeds)
+specificities <- numeric(num_seeds)
+
+for (seed in 1:100){
+  set.seed(seed)
+  trainIndices = sample(1:dim(OverSamp)[1], 0.7 * dim(OverSamp)[1])
+  train = OverSamp[trainIndices,]
+  test = OverSamp[-trainIndices,]
+  classifications = knn(train[,c(24, 37,20)],test[,c(24, 37,20)],train$Attrition, prob = TRUE, k = 2)  
+  CM = confusionMatrix(table(test$Attrition,classifications))
+  accuracies[seed] = CM$overall[1]
+  sensitivies[seed] = CM$byClass[1]
+  specificities[seed] = CM$byClass[2]
+}
+
+# Accuracy histogram for all the Test Train Splits 
+ggplot(data.frame(accuracies), aes(x = accuracies)) + 
+  geom_histogram(fill = "#FF6961", color="#FDFD96") +
+  xlab("Accuracy") +
+  ylab("Count")+
+  ggtitle("Accuracies of KNN Classifier on Test Data") + 
+  theme(plot.background = element_rect("#f5f3ed"))+
+  scale_x_continuous(breaks = scales::pretty_breaks(n = 10))
+
+
+min(accuracies) # 74.7%, really good minimum accuracy
+max(accuracies) # 86.1%
+
+
+# Sensitivies histogram for all the Test Train Splits 
+ggplot(data.frame(sensitivies), aes(x = sensitivies)) + 
+  geom_histogram(fill = "#FF6961", color="#FDFD96") +
+  xlab("Sensitivity") +
+  ylab("Count")+
+  ggtitle("Sensitivities of KNN Classifier on Test Data") + 
+  theme(plot.background = element_rect("#f5f3ed"))+
+  scale_x_continuous(breaks = scales::pretty_breaks(n = 10))
+
+
+min(sensitivies) # 86.4%, really good minimum sensitivity
+max(sensitivies) # 99.3%
+
+
+# Specificities histogram for all the Test Train Splits 
+ggplot(data.frame(specificities), aes(x = specificities)) + 
+  geom_histogram(fill = "#FF6961", color="#FDFD96") +
+  xlab("Specificity") +
+  ylab("Count")+
+  ggtitle("Specificities of KNN Classifier on Test Data") + 
+  theme(plot.background = element_rect("#f5f3ed"))+
+  scale_x_continuous(breaks = scales::pretty_breaks(n = 10))
+
+min(specificities) # 65.17%
+max(specificities) # 80.8%
+
+mean(accuracies)
+mean(sensitivies)
+mean(specificities)
+
+```
+
+## Naive Bayes Model 
+```{r}
+
+# Build a NB model on original data 
+trainIndices = sample(seq(1:length(data$Attrition)),round(.7*length(data$Attrition)))
+train = data[trainIndices,]
+test = data[-trainIndices,]
+model = naiveBayes(train[,c(24,37,20)], train$Attrition)
+a = table(factor(test$Attrition),predict(model,test[,c(24,37,20)]))
+confusionMatrix(a) # not a good specificity Score
+
+# Build NB model on oversampled data 
+OnlyY = data %>% filter(Attrition == "Yes")
+OnlyYOver = rbind(OnlyY,OnlyY[sample(seq(1,140,1),(730-140),replace = TRUE),])
+dim(OnlyYOver)
+
+OverSamp = rbind(data %>% filter(Attrition == "No"), OnlyYOver)
+dim(OverSamp)
+
+trainIndices = sample(1:dim(OverSamp)[1], 0.7 * dim(OverSamp)[1])
+train = OverSamp[trainIndices,]
+test = OverSamp[-trainIndices,]
+model = naiveBayes(train[,c(24,37,20)], train$Attrition)
+a = table(factor(test$Attrition),predict(model,test[,c(24,37,20)]))
+confusionMatrix(a) # Better Model than the original data 
+
+# Testing to see the different Sensitivity and Specificity for various Seeds 
+for (seed in 1:100){
+  set.seed(seed)
+  trainIndices = sample(1:dim(OverSamp)[1], 0.7 * dim(OverSamp)[1])
+  train = OverSamp[trainIndices,]
+  test = OverSamp[-trainIndices,]
+  model = naiveBayes(train[,c(24,37,20)], train$Attrition)  
+  a = table(factor(test$Attrition),predict(model,test[,c(24,37,20)]))
+  CM = confusionMatrix(a)
+  accuracies[seed] = CM$overall[1]
+  sensitivies[seed] = CM$byClass[1]
+  specificities[seed] = CM$byClass[2]
+}
+
+# Accuracy histogram for all the Test Train Splits 
+ggplot(data.frame(accuracies), aes(x = accuracies)) + 
+  geom_histogram(fill = "#FF6961", color = "#FDFD96") +
+  xlab("Accuracy") +
+  ylab("Count")+
+  ggtitle("Accuracies of Naive Bayes Classifier on Test Data") + 
+  theme(plot.background = element_rect("#f5f3ed"))+
+  scale_x_continuous(breaks = scales::pretty_breaks(n = 10))
+
+
+min(accuracies) # 63.6%, really good minimum accuracy
+max(accuracies) # 72%
+
+
+# Sensitivies histogram for all the Test Train Splits 
+ggplot(data.frame(sensitivies), aes(x = sensitivies)) + 
+  geom_histogram(fill = "#FF6961", color = "#FDFD96") +
+  xlab("Sensitivity") +
+  ylab("Count")+
+  ggtitle("Sensitivities of Naive Bayes Classifier on Test Data") + 
+  theme(plot.background = element_rect("#f5f3ed"))+
+  scale_x_continuous(breaks = scales::pretty_breaks(n = 10))
+
+
+min(sensitivies) # 60.7%, really good minimum sensitivity
+max(sensitivies) # 74.1%
+
+
+# Specificities histogram for all the Test Train Splits 
+ggplot(data.frame(specificities), aes(x = specificities)) + 
+  geom_histogram(fill = "#FF6961", color = "#FDFD96") +
+  xlab("Specificity") +
+  ylab("Count")+
+  ggtitle("Specificities of Naive Bayes Classifier on Test Data") + 
+  theme(plot.background = element_rect("#f5f3ed"))+
+  scale_x_continuous(breaks = scales::pretty_breaks(n = 10))
+
+min(specificities) # 60.5%
+max(specificities) # 74.4%
+
+
+```
+
+## Prediction using KNN 
+
+Based on the sensitvity and specificity scores, the KNN model created from oversampling seems to be better at identify attrition, so I will use it to predict the attrition of the competition dataset. 
+
+```{r}
+# Load in Competition Dataset 
+competition = s3read_using(FUN = read.csv,
+                          bucket = "ddsproject1",
+                          object = "CaseStudy2CompSet No Attrition.csv")
+
+# Clean the Data to be used in model 
+competition$Age_Bin <- cut(competition$Age, breaks=c(18, 22, 26, 30, 34, 38, 42, 46, 50, 54, 61), right = FALSE)
+competition$OverTime = as.factor(ifelse(competition$OverTime == 'Yes',1,0))
+competition$OverTime = as.numeric(competition$OverTime)
+competition$Age_Bin = as.numeric(competition$Age_Bin)
+
+# Oversample the training data 
+OnlyY = data %>% filter(Attrition == "Yes")
+OnlyYOver = rbind(OnlyY,OnlyY[sample(seq(1,140,1),(730-140),replace = TRUE),])
+dim(OnlyYOver)
+
+OverSamp = rbind(data %>% filter(Attrition == "No"), OnlyYOver)
+dim(OverSamp)
+
+
+Attritionclass = knn(OverSamp[,c(20, 24,37)],competition[,c(19, 23,36)],OverSamp[,3], prob = TRUE, k = 2)
+
+Case2PredictionsPeterAttrition = data.frame(competition,Attritionclass)
+Case2PredictionsPeterAttrition = Case2PredictionsPeterAttrition[,c(1,37)]
+write.csv(Case2PredictionsPeterAttrition,"C:/DoingDataScience/CaseStudy2DDS/Case2PredictionsPeterAttrition.csv")
+
+```
+
+
+# Salary Prediction
+
+## Looking at Variable Correlation 
+
+After looking at various variables, it seems like Education Field, Department, YearsAtCompany, Education, JobRole, JobLevel, and TotalWorkingYears are potentially influential in predicting the Monthly Income of an Individual. 
+
+```{r}
+#ggplot(data = data, aes(x = MonthlyIncome, fill = BusinessTravel)) + geom_boxplot() # seems like same income for all type of travel
+#ggplot(data = data, aes(x = MonthlyIncome, fill = JobInvolvement)) + geom_boxplot() # seems the same for all involement levels 
+#ggplot(data = data, aes(y = MonthlyIncome, x = HourlyRate)) + geom_point() # not related 
+
+# Not really correlated
+#ggplot(data = data, aes(y = MonthlyIncome, x = YearsInCurrentRole)) + geom_point()
+
+
+ggplot(data = data, aes(x = MonthlyIncome, fill = EducationField)) + geom_boxplot() # income seems different by education field 
+
+ggplot(data = data, aes(x = MonthlyIncome, fill = Department)) + geom_boxplot() # income seems different by department 
+
+# seems kinda positively correlated 
+ggplot(data = data, aes(y = MonthlyIncome, x = YearsAtCompany)) + geom_point()
+
+#seems  like different education affect the salary 
+ggplot(data = data, aes(x = MonthlyIncome, fill = Education)) + geom_boxplot()
+
+color = c("#FF6961","#FAA0A0", "#FAC898","#FDFD96","#C1E1C1", "#A7C7E7", "#C3B1E1", "#F8C8DC","#D1C3B7")
+
+# Very much different for each role 
+ggplot(data = data, aes(x = MonthlyIncome, fill = JobRole)) + 
+  geom_boxplot() + 
+  ggtitle("Monthly Income by Job Role") +
+  xlab("Monthly Income") +
+  theme(plot.background = element_rect("#f5f3ed"),
+        legend.background = element_blank(), 
+        axis.ticks.y = element_blank(), 
+        axis.text.y = element_blank()) + 
+  scale_fill_manual(values = color) 
+    
+
+color = c("#FF6961","#FDFD96","#C1E1C1", "#A7C7E7", "#F8C8DC","#D1C3B7")
+# Very Different Income for each level 
+ggplot(data = data, aes(x = MonthlyIncome, fill = JobLevel)) + 
+  geom_boxplot() + 
+  ggtitle("Monthly Income by Job Role") +
+  xlab("Monthly Income") +
+  theme(plot.background = element_rect("#f5f3ed"),
+        legend.background = element_blank(), 
+        axis.ticks.y = element_blank(), 
+        axis.text.y = element_blank()) + 
+  scale_fill_manual(values = color) 
+
+# Positively Correlated
+color = c("#FF6961","#FDFD96","#C1E1C1", "#A7C7E7", "#F8C8DC","#D1C3B7")
+ggplot(data = data, aes(y = MonthlyIncome, x = TotalWorkingYears)) + 
+  geom_point(color = "#A7C7E7",position = "jitter") + 
+  ggtitle("Total Working Years by Monthly Income") +
+  xlab("Total Working Years") + 
+  ylab("Monthly Income") + 
+  theme(plot.background = element_rect("#f5f3ed"))
+
+
+```
+
+## Testing the Variables Significance
+
+The p-values of Job Role, Job Level and Total Working Years are significant so I made a model using those 3 variables. 
+```{r}
+fit = lm(MonthlyIncome ~ EducationField + Department + YearsAtCompany + Education + JobRole + JobLevel + TotalWorkingYears, data = data)
+summary(fit)
+
+
+
+fit = lm(MonthlyIncome ~ JobRole + JobLevel + TotalWorkingYears, data = data)
+summary(fit)
+
+```
+
+## Comparing Models 
+
+Job Level and Job Role are both factor variables so we will check if interaction variables are better for the model. Based on build your own anova's we found that adding the job role and job level as interaction variables is significant compared to having them as indicator variables. 
+```{r}
+fit1 = lm(MonthlyIncome ~ JobRole + JobLevel + TotalWorkingYears, data = data)
+anova(fit1)
+
+fit2 = lm(MonthlyIncome ~ JobRole + JobLevel * TotalWorkingYears, data = data)
+anova(fit2)
+
+fit3 = lm(MonthlyIncome ~ JobRole * JobLevel * TotalWorkingYears, data = data)
+anova(fit3)
+
+```
+
+
+## Final Model To Predict the Monthly Salary 
+```{r}
+# Final Model 
+fit = lm(MonthlyIncome ~ JobRole * JobLevel * TotalWorkingYears, data = data)
+predictsalary = predict(fit)
+
+
+
+# RMSE 
+MSE = sum((data$MonthlyIncome-predictsalary)^2)*1/870
+RMSE = sqrt(MSE)
+RMSE
+
+# Predicted Salary Values 
+competitionsalary = s3read_using(FUN = read.csv,
+                          bucket = "ddsproject1",
+                          object = "CaseStudy2CompSet No Salary.csv")
+
+competitionsalary$JobLevel = as.factor(competitionsalary$JobLevel)
+
+monthlyincomeprediction = predict(fit, newdata = competitionsalary)
+
+Case2PredictionsPeterSalary = data.frame(competitionsalary[,1], monthlyincomeprediction)
+names(Case2PredictionsPeterSalary) = c("ID", "MonthlyIncome")
+Case2PredictionsPeterSalary$MonthlyIncome = as.integer(Case2PredictionsPeterSalary$MonthlyIncome)
+
+write.csv(Case2PredictionsPeterSalary, "C:/DoingDataScience/CaseStudy2DDS/Case2PredictionsPeterSalary.csv")
+
+```
+
+
+# Job Role Trends 
+
+```{r}
+data %>% 
+count(Education, JobRole) %>% 
+ggplot(aes(x = Education, y = JobRole)) + 
+geom_tile(mapping = aes(fill = n))
+
+data %>% 
+count(EnvironmentSatisfaction, JobRole) %>% 
+ggplot(aes(x = EnvironmentSatisfaction, y = JobRole)) + 
+geom_tile(mapping = aes(fill = n))
+
+# Job Satisfaction of Each Role 
+ggplot(data, aes(x=JobRole, fill = JobSatisfaction)) + geom_bar(stat="count",position = "dodge")
+
+individualjobrole = data %>% 
+  count(JobRole,JobSatisfaction) 
+  
+totaljobrole = data %>% 
+  group_by(JobRole) %>% 
+  summarise(total = n())
+
+jobrolessatisfaction = merge(individualjobrole,totaljobrole, by="JobRole")
+
+percentjobrolesatisfaction = jobrolessatisfaction %>% 
+  summarise(percent = n/total*100)
+
+percentagessatisfaction = data.frame(jobrolessatisfaction,percentjobrolesatisfaction)
+
+color = c("#FF6961","#FDFD96", "#A7C7E7","#C3B1E1")
+ggplot(percentagessatisfaction, aes(x=JobRole, y = percent, fill = JobSatisfaction)) +
+  geom_bar(stat = "identity" , position = "dodge",color = "black") + 
+  ggtitle("Job Satisfaction for Each Role") +
+  xlab("Job Role") + 
+  ylab("Percentage") +
+  coord_flip() +
+  theme(plot.background = element_rect("#f5f3ed"), 
+        legend.background = element_blank()) + 
+  scale_fill_manual(values = color)
+
+
+
+# Work Life Balance of Each Role 
+individualworklife = data %>% 
+  count(JobRole,WorkLifeBalance) 
+  
+totalworklife = data %>% 
+  group_by(JobRole) %>% 
+  summarise(total = n())
+
+jobrolesbalance = merge(individualworklife,totalworklife, by="JobRole")
+
+percentjobrolebalance = jobrolesbalance %>% 
+  summarise(percent = n/total*100)
+
+percentagebalance = data.frame(jobrolesbalance,percentjobrolebalance)
+
+color = c("#FAA0A0", "#FDFD96","#C1E1C1", "#C3B1E1", "#F8C8DC")
+
+ggplot(percentagebalance, aes(x=JobRole, y = percent, fill = WorkLifeBalance)) +
+  geom_bar(stat = "identity" , position = "dodge",color = "black") + 
+  ggtitle("Work Life Balance Rating for Each Role") +
+  xlab("Job Role") + 
+  ylab("Percentage") +
+  coord_flip() +
+  theme(plot.background = element_rect("#f5f3ed"), 
+        legend.background = element_blank()) + 
+  scale_fill_manual(values = color) 
+
+
+
+# Years at company by Job Role
+color = c("#FF6961","#FAA0A0", "#FAC898","#FDFD96","#C1E1C1", "#A7C7E7", "#C3B1E1", "#F8C8DC","#D1C3B7")
+ggplot(data, aes(fill=JobRole, x = YearsAtCompany)) + 
+  geom_boxplot() + 
+  ggtitle("Years with Company by Role") +
+  xlab("Years with Company") + 
+  theme(axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        plot.background = element_rect("#f5f3ed"), 
+        legend.background = element_blank()) +
+  scale_fill_manual(values = color)
+
+library(scales)
+color = c("#FF6961","#A7C7E7", "#C3B1E1", "#F8C8DC","#D1C3B7")
+ggplot(data, aes(fill=Attrition, y = JobRole)) + 
+  geom_bar(position = "fill") + 
+  scale_x_continuous(labels = scales::percent) + 
+  ggtitle("Percentage of Attrition by Job Role") + 
+  xlab("Job Role") +
+  ylab("Percentage")+
+  scale_fill_manual(values = color) +
+   theme(plot.background = element_rect("#f5f3ed"), 
+        legend.background = element_blank())
+
+
+ggplot(data, aes(fill=Attrition, y = JobSatisfaction)) + 
+  geom_bar(position = "fill") + 
+  scale_x_continuous(labels = scales::percent) + 
+  ggtitle("Percentage of Attrition by Job Satisfaction") + 
+  xlab("Percentage") +
+  ylab("Job Satisfaction Score")+
+  scale_fill_manual(values = color) +
+   theme(plot.background = element_rect("#f5f3ed"), 
+        legend.background = element_blank())
+
+ggplot(data, aes(fill=Attrition, y = StockOptionLevel)) + 
+  geom_bar(position = "fill") + 
+  scale_x_continuous(labels = scales::percent) + 
+  ggtitle("Percentage of Attrition by Stock Option") + 
+  xlab("Job Role") +
+  ylab("Percentage")+
+  scale_fill_manual(values = color) +
+   theme(plot.background = element_rect("#f5f3ed"), 
+        legend.background = element_blank())
+
+```
+
+

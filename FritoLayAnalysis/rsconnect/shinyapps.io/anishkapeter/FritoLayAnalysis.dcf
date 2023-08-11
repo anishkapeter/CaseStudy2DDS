@@ -1,0 +1,12 @@
+name: FritoLayAnalysis
+title: FritoLayAnalysis
+username: anishkapeter
+account: anishkapeter
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 9588994
+bundleId: 7555809
+url: https://anishkapeter.shinyapps.io/FritoLayAnalysis/
+version: 1
+asMultiple: FALSE
+asStatic: FALSE
