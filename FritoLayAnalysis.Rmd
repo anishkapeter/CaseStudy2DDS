@@ -27,6 +27,7 @@ library(ggplot2)
 library(aws.s3)
 library(dplyr)
 library(GGally)
+library(RCurl)
 
 
 data = read.csv("https://raw.githubusercontent.com/anishkapeter/CaseStudy2DDS/main/data_unclean.csv")
@@ -357,9 +358,10 @@ Based on the sensitvity and specificity scores, the KNN model created from overs
 
 ```{r}
 # Load in Competition Dataset 
-competition = s3read_using(FUN = read.csv,
-                          bucket = "ddsproject1",
-                          object = "CaseStudy2CompSet No Attrition.csv")
+competition = read.table(textConnection(getURL(
+  "https://s3.us-east-2.amazonaws.com/ddsproject1/CaseStudy2CompSet%20No%20Attrition.csv"
+)), sep=",", header=TRUE)
+
 
 # Clean the Data to be used in model 
 competition$Age_Bin <- cut(competition$Age, breaks=c(18, 22, 26, 30, 34, 38, 42, 46, 50, 54, 61), right = FALSE)
@@ -477,12 +479,12 @@ anova(fit3)
 
 ```
 
+![2 Build your own ANOVA to determine statistical significance of models](C:/Users/anish/Pictures/Screenshots/Screenshot 2023-08-13 024354.png)
 
 ## Final Model To Predict the Monthly Salary 
 ```{r}
 # Final Model 
 fit = lm(MonthlyIncome ~ JobRole * JobLevel * TotalWorkingYears, data = data)
-summary(fit)
 predictsalary = predict(fit)
 
 
@@ -493,9 +495,10 @@ RMSE = sqrt(MSE)
 RMSE
 
 # Predicted Salary Values 
-competitionsalary = s3read_using(FUN = read.csv,
-                          bucket = "ddsproject1",
-                          object = "CaseStudy2CompSet No Salary.csv")
+competitionsalary = read.table(textConnection(getURL(
+  "https://s3.us-east-2.amazonaws.com/ddsproject1/CaseStudy2CompSet%20No%20Salary.csv"
+)), sep=",", header=TRUE)
+
 
 competitionsalary$JobLevel = as.factor(competitionsalary$JobLevel)
 

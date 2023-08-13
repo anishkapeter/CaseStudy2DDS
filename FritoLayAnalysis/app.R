@@ -16,8 +16,30 @@ library(GGally)
 
 
 
-data = read.csv("https://raw.githubusercontent.com/anishkapeter/CaseStudy2DDS/main/data.csv")
 
+data = read.csv("https://raw.githubusercontent.com/anishkapeter/CaseStudy2DDS/main/data_unclean.csv")
+data = data[2:37]
+## Make Categorical Variables into factors
+data$Attrition = as.factor(data$Attrition)
+data$Over18 = as.factor(data$Over18)
+data$OverTime = as.factor(ifelse(data$OverTime == 'Yes',1,0))
+data$BusinessTravel = as.factor(data$BusinessTravel)
+data$Department = as.factor(data$Department)
+data$EducationField = as.factor(data$EducationField)
+data$Education = as.factor(data$Education)
+data$EnvironmentSatisfaction = as.factor(data$EnvironmentSatisfaction)
+data$Gender = as.factor(data$Gender)
+data$JobInvolvement = as.factor(data$JobInvolvement)
+data$JobLevel = as.factor(data$JobLevel)
+data$JobRole = as.factor(data$JobRole)
+data$JobSatisfaction = as.factor(data$JobSatisfaction)
+data$MaritalStatus = as.factor(data$MaritalStatus)
+data$NumCompaniesWorked = as.factor(data$NumCompaniesWorked)
+data$PerformanceRating = as.factor(data$PerformanceRating)
+data$RelationshipSatisfaction = as.factor(data$RelationshipSatisfaction)
+data$StandardHours = as.factor(data$StandardHours)
+data$StockOptionLevel = as.factor(data$StockOptionLevel)
+data$WorkLifeBalance = as.factor(data$WorkLifeBalance)
 
 header <- dashboardHeader(title = "Frito Lay Analysis")
 
@@ -207,7 +229,7 @@ server <- function(input, output) {
     ggplot(data,aes(fill=Attrition, y = JobSatisfaction)) + 
     geom_bar(position = "fill") + 
     scale_x_continuous(labels = scales::percent) + 
-    ggtitle("Percentage of Attrition by Job Role") + 
+    ggtitle("Percentage of Attrition by Job Satisfaction") + 
     xlab("Job Role") +
     ylab("Percentage")+
     scale_fill_manual(values = color) +
