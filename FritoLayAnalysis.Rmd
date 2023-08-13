@@ -86,7 +86,8 @@ ggplot(data, aes(fill=Attrition, y = OverTime)) +
   ylab("Over Time")+
   scale_fill_manual(values = colors) +
    theme(plot.background = element_rect("#f5f3ed"), 
-        legend.background = element_blank())
+        legend.background = element_blank()) + 
+  scale_y_discrete(labels=c("No","Yes"))
 
 
 colors = c("#FDFD96","#FF6961")
@@ -427,7 +428,7 @@ color = c("#FF6961","#FDFD96","#C1E1C1", "#A7C7E7", "#F8C8DC","#D1C3B7")
 # Very Different Income for each level 
 ggplot(data = data, aes(x = MonthlyIncome, fill = JobLevel)) + 
   geom_boxplot() + 
-  ggtitle("Monthly Income by Job Role") +
+  ggtitle("Monthly Income by Job Level") +
   xlab("Monthly Income") +
   theme(plot.background = element_rect("#f5f3ed"),
         legend.background = element_blank(), 
@@ -481,6 +482,7 @@ anova(fit3)
 ```{r}
 # Final Model 
 fit = lm(MonthlyIncome ~ JobRole * JobLevel * TotalWorkingYears, data = data)
+summary(fit)
 predictsalary = predict(fit)
 
 
