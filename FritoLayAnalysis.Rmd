@@ -479,7 +479,7 @@ anova(fit3)
 
 ```
 
-![2 Build your own ANOVA to determine statistical significance of models](C:/Users/anish/Pictures/Screenshots/Screenshot 2023-08-13 024354.png)
+![2 Build your own ANOVA to determine statistical significance of models](C:/DoingDataScience/CaseStudy2DDS/ANOVAS.png)
 
 ## Final Model To Predict the Monthly Salary 
 ```{r}
